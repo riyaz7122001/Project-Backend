@@ -1,33 +1,37 @@
 import express from "express";
-import data from "./data.js";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import seedRouter from "./routes/seedRouter.js";
+import productRouter from "./routes/productRouter.js";
+import userRouter from "./routes/userRouter.js";
+dotenv.config();
 const app = express();
 
-app.get("/api/products", (req, res) => {
-  res.send(data.products);
-});
+const port = process.env.PORT || 5000;
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("connected to db");
+  })
+  .catch((err) => {
+    console.log(err.message);
+  });
 
-app.get("/api/products/slug/:slug", (req, res) => {
-  const product = data.products.find((x) => x.slug === req.params.slug);
-  if (product) {
-    res.send(product);
-  } else {
-    res.status(404);
-  }
-});
-
-app.get("/api/products/:id", (req, res) => {
-  const product = data.products.find((x) => x._id === req.params.id);
-  if (product) {
-    res.send(product);
-  } else {
-    res.status(404);
-  }
-});
-
-const port = process.env.PORT || 4000;
 app.listen(port, () => {
   console.log(`serve at http://localhost:${port}`);
 });
 
 // Listen for body events
 app.use(express.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// routes
+app.use("/api/seed", seedRouter);
+app.use("/api/products", productRouter);
+app.use("/api/users", userRouter);
+
+// error middleware
+app.use((err, req, res, next) => {
+  res.status(500).send({ message: err.message });
+});
